@@ -6,11 +6,48 @@ mongoose
   .catch((err) => console.error("Could not connect to MongoDB... ", err));
 
 const courseSchema = new mongoose.Schema({
-  name: String,
+  name: {
+    type: String,
+    required: true,
+    minlength: 5,
+    maxlength: 255,
+    // match: /pattern/
+  },
+  category: {
+    type: String,
+    required: true,
+    enum: ["web", "mobile", "network"],
+    lowercase: true,
+    // uppercase: true,
+    trim: true,
+  },
   author: String,
-  tags: [String],
+  tags: {
+    type: Array,
+    validate: {
+      isAsync: true,
+      validator: function (v, callback) {
+        setTimeout(() => {
+          // Do some async work
+          const result = v && v.length > 0;
+          callback(result);
+        }, 1000);
+      },
+      message: "A course should have at least one tag.",
+    },
+  },
   date: { type: Date, default: Date.now },
   isPublished: Boolean,
+  price: {
+    type: Number,
+    required: function () {
+      return this.isPublished;
+    },
+    min: 10,
+    max: 200,
+    get: (v) => Math.round(v),
+    set: (v) => Math.round(v),
+  },
 });
 
 // Mongoose Class Modeling
@@ -19,14 +56,20 @@ const Course = mongoose.model("course", courseSchema);
 // Create Course Function
 async function createCourse() {
   const course = new Course({
-    name: "Test Course",
+    name: "Docker Course",
+    category: "Web",
     author: "Ryan Yuri",
-    tags: ["test"],
+    tags: ["backend"],
     isPublished: true,
+    price: 15.8,
   });
 
-  const result = await course.save();
-  console.log(result);
+  try {
+    const result = await course.save();
+    console.log(result);
+  } catch (ex) {
+    for (field in ex.errors) console.log(ex.errors[field].message);
+  }
 }
 
 // Get Courses Function
@@ -48,7 +91,7 @@ async function getCourses() {
   // or
   // and
 
-  const courses = await Course.find({ author: "Ryan Yuri", isPublished: true })
+  const courses = await Course.find({ _id: "61460793d1d607304829b4dc" })
     // Starts with 'Ryan' //
     //  .find({ author: /^Ryan/ })
     //
@@ -57,12 +100,13 @@ async function getCourses() {
     //
     // Contains 'Ryan' //
     // .find({ author: /.*Ryan.*/i })
-    .skip((pageNumber - 1) * pageSize)
-    .limit(pageSize)
+
+    // .skip((pageNumber - 1) * pageSize)
+    // .limit(pageSize)
     .sort({ name: 1 })
-    //.select({ name: 1, tags: 1 });
-    .count();
-  console.log(courses);
+    .select({ name: 1, tags: 1, price: 1 });
+  //.count();
+  console.log(courses[0].price);
 }
 
 // Update Course
@@ -97,4 +141,5 @@ async function removeCourse(id) {
 }
 
 // call desired function
-removeCourse("612ed99c243e2402dc8de49f");
+//removeCourse("612ed99c243e2402dc8de49f");
+getCourses();
