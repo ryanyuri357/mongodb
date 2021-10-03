@@ -56,7 +56,7 @@ const Course = mongoose.model("course", courseSchema);
 // Create Course Function
 async function createCourse() {
   const course = new Course({
-    name: "Docker Course",
+    name: "Kubernetes Course",
     category: "Web",
     author: "Ryan Yuri",
     tags: ["backend"],
